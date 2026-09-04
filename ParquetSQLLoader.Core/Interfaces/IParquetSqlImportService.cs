@@ -6,5 +6,6 @@ namespace ParquetSQLLoader.Core.Interfaces
 {
     public interface IParquetSqlImportService
     {
+        Task ImportAsync(string parquetFilePath, CancellationToken cancellationToken = default);
     }
 }

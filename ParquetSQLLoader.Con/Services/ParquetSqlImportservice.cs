@@ -18,7 +18,7 @@ namespace ParquetSQLLoader.Con.Services
             _sqlBulkInserter = sqlBulkInserter;
         }
 
-        private async Task ImportAsync(string parquetFilePath, CancellationToken cancellationToken = default)
+        public async Task ImportAsync(string parquetFilePath, CancellationToken cancellationToken = default)
         {
             if(string.IsNullOrWhiteSpace(parquetFilePath))
             {
