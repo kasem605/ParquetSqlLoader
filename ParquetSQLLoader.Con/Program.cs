@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using ParquetSQLLoader.Core.Interfaces;
 using ParquetSQLLoader.Infrastructure.Loader;
+using ParquetSQLLoader.Infrastructure.SqlServer;
 using ParquetSQLLoader.Infrastructure.Parquet;
-using ParquetSQLLoader.Infrastructure.Parquet.SqlServer;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)

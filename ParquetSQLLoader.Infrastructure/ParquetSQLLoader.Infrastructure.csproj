@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="SqlServer\**" />
-    <EmbeddedResource Remove="SqlServer\**" />
-    <None Remove="SqlServer\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageReference Include="Parquet.Net" Version="6.1.0" />
   </ItemGroup>

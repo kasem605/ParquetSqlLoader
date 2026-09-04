@@ -2,7 +2,7 @@
   "profiles": {
     "ParquetSQLLoader.Con": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\Parquet\\sample-simple.parquet"
+      "commandLineArgs": "C:\\Parquet\\sample-uncompressed.parquet"
     }
   }
 }
