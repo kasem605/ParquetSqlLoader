@@ -32,7 +32,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
 
             string sql = BuildCreateTableSql(tableDefinition);
 
-            await using SqlConnection connection = new SqlConnection(_connectionString.ConnectionString);
+            await using SqlConnection connection = new SqlConnection(_connectionString);
 
             await connection.OpenAsync(cancellationToken);
 
@@ -49,7 +49,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
 
             string tableName = QuoteIdentifier(tableDefinition.TableName);
 
-            sql.Append("CREATE TABLE {tableName}");
+            sql.Append($"CREATE TABLE {tableName}");
 
             sql.Append("(");
 

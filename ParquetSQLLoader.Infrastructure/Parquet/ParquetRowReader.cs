@@ -33,7 +33,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet
             IReadOnlyList<ParquetColumnDefinition> columns = parquetReader.Schema.GetDataFields().Select(f => new ParquetColumnDefinition
             {
                 Name = f.Name,
-                ClrType = f.ClrType.Name,
+                ClrType = GetApplicationClrType(f.ClrType),
                 IsNullable = f.IsNullable
             }).ToList();
 
@@ -47,15 +47,14 @@ namespace ParquetSQLLoader.Infrastructure.Parquet
 
                 // Read each column
 
-                List<Array>? columnData = new List<Array>(dataFields.Length);
+                var columnData = new object?[dataFields.Length];
 
-                foreach (DataField dataField in dataFields)
+                for(int columnIndex = 0; columnIndex < dataFields.Length;columnIndex++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    Array values = await ReadColumnAsync(rowGroupReader, dataField, rowCount, cancellationToken);
+                    columnData[columnIndex] = await ReadColumnAsync(rowGroupReader, dataFields[columnIndex], rowCount, cancellationToken);
 
-                    columnData.Add(values);
                 }
 
                 // Convert column-oriented Parquet data
@@ -65,13 +64,14 @@ namespace ParquetSQLLoader.Infrastructure.Parquet
 
                 for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
 
                     object?[]? row = new object?[dataFields.Length];
 
                     for (int columnIndex = 0; columnIndex < dataFields.Length; columnIndex++)
                     {
-                        row[columnIndex] = columnData[columnIndex].GetValue(rowIndex);
+                        Array values = (Array)columnData[columnIndex]!;
+
+                        row[columnIndex] = values.GetValue(rowIndex);
                     }
 
                     rows.Add(row);
@@ -87,164 +87,64 @@ namespace ParquetSQLLoader.Infrastructure.Parquet
 
         }
 
-        private async Task<Array> ReadColumnAsync(ParquetRowGroupReader rowGroupReader, DataField dataField, int rowCount, CancellationToken cancellationToken)
+        private static string GetApplicationClrType(Type clrType)
+        {
+            if(clrType == typeof(ReadOnlyMemory<byte>))
+            {
+                return "String";
+            }
+
+            return clrType.Name;
+        }
+
+        private static async Task<Array> ReadColumnAsync(ParquetRowGroupReader rowGroupReader, DataField dataField, int rowCount, CancellationToken cancellationToken)
         {
             System.Type clrType = dataField.ClrType;
 
-            // Nullable value type
-            if(dataField.IsNullable && clrType.IsValueType && Nullable.GetUnderlyingType(clrType) == null)
+            // STRING
+            if(clrType == typeof(ReadOnlyMemory<byte>) || clrType == typeof(ReadOnlyMemory<char>))
             {
-                System.Type nullableType = typeof(Nullable<>).MakeGenericType(clrType);
+                string?[]? values = new string?[rowCount];
 
-                Array values = Array.CreateInstance(nullableType, rowCount);
-
-                await ReadNullableColumnAsync(rowGroupReader, dataField, values, clrType, cancellationToken);
+                await rowGroupReader.ReadAsync(dataField, values);
 
                 return values;
             }
 
-            // Reference types and non-nullable value types
-
-            Array buffer = Array.CreateInstance(clrType, rowCount);
-
-            await ReadNonNullableColumnAsync(rowGroupReader, dataField, buffer, clrType, cancellationToken);
-
-            return buffer;
-        }
-
-        private static async Task ReadNonNullableColumnAsync(ParquetRowGroupReader rowGroupReader, DataField dataField, Array buffer, System.Type clrType, CancellationToken cancellationToken)
-        {
-            // Parquet.Net's ReadAsync<T> is strongly typed.
-            // Dispatch based on the actual CLR type.
-
-            if (clrType == typeof(string))
-            {
-                await rowGroupReader.ReadAsync(dataField, (string[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(int))
-            {
-                await rowGroupReader.ReadAsync<int>(dataField, (int[])buffer);
-                return;
-            }
-
+            // INT64
             if (clrType == typeof(long))
             {
-                await rowGroupReader.ReadAsync<long>(dataField, (long[])buffer);
-                return;
+                long?[]? values = new long?[rowCount];
+
+                await rowGroupReader.ReadAsync(dataField, values.AsMemory(), cancellationToken: cancellationToken);
+
+                return values;
             }
 
-            if (clrType == typeof(short))
-            {
-                await rowGroupReader.ReadAsync<short>(dataField, (short[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(byte))
-            {
-                await rowGroupReader.ReadAsync<byte>(dataField, (byte[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(float))
-            {
-                await rowGroupReader.ReadAsync<float>(dataField, (float[])buffer);
-                return;
-            }
-
+            // DOUBLE
             if (clrType == typeof(double))
             {
-                await rowGroupReader.ReadAsync<double>(dataField, (double[])buffer);
-                return;
+                double?[]? values = new double?[rowCount];
+
+                await rowGroupReader.ReadAsync(dataField, values.AsMemory(), cancellationToken: cancellationToken);
+
+                return values;
             }
 
+            // BOOLEAN
             if (clrType == typeof(bool))
             {
-                await rowGroupReader.ReadAsync<bool>(dataField, (bool[])buffer);
-                return;
+                bool?[]? values = new bool?[rowCount];
+
+                await rowGroupReader.ReadAsync(dataField, values.AsMemory(), cancellationToken: cancellationToken);
+
+                return values;
             }
 
-            if (clrType == typeof(decimal))
-            {
-                await rowGroupReader.ReadAsync<decimal>(dataField, (decimal[])buffer);
-                return;
-            }
+            // Handle other types as needed
 
-            if (clrType == typeof(DateTime))
-            {
-                await rowGroupReader.ReadAsync<DateTime>(dataField, (DateTime[])buffer);
-                return;
-            }
-
-            throw new NotSupportedException($"Parquet CLR type '{clrType.FullName}' for column {clrType.Name} is not supported.");
-
+            throw new NotSupportedException($"Parquet CLR type '{clrType.FullName}' for column {dataField.Name} is not currently supported.");
         }
 
-        private async Task ReadNullableColumnAsync(ParquetRowGroupReader rowGroupReader, DataField dataField, Array buffer, System.Type clrType, CancellationToken cancellationToken)
-        {
-            if (clrType == typeof(string))
-            {
-                await rowGroupReader.ReadAsync(dataField, (string[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(int))
-            {
-                await rowGroupReader.ReadAsync<int>(dataField, (int[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(long))
-            {
-                await rowGroupReader.ReadAsync<long>(dataField, (long[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(short))
-            {
-                await rowGroupReader.ReadAsync<short>(dataField, (short[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(byte))
-            {
-                await rowGroupReader.ReadAsync<byte>(dataField, (byte[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(float))
-            {
-                await rowGroupReader.ReadAsync<float>(dataField, (float[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(double))
-            {
-                await rowGroupReader.ReadAsync<double>(dataField, (double[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(bool))
-            {
-                await rowGroupReader.ReadAsync<bool>(dataField, (bool[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(decimal))
-            {
-                await rowGroupReader.ReadAsync<decimal>(dataField, (decimal[])buffer);
-                return;
-            }
-
-            if (clrType == typeof(DateTime))
-            {
-                await rowGroupReader.ReadAsync<DateTime>(dataField, (DateTime[])buffer);
-                return;
-            }
-
-            throw new NotSupportedException($"Parquet CLR type '{clrType.FullName}' for column {clrType.Name} is not supported.");
-
-        }
     }
 }

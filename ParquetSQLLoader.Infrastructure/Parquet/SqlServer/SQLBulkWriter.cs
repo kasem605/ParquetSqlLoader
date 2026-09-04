@@ -43,7 +43,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
 
             ValidateRows(batch);
 
-            await using SqlConnection connection = new SqlConnection(_connectionString.ConnectionString);
+            await using SqlConnection connection = new SqlConnection(_connectionString);
 
             await connection.OpenAsync(cancellationToken);
 
@@ -79,10 +79,10 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
                 return $"{QuoteIdentifier(parts[0])}.{QuoteIdentifier(parts[1])}";
             }
   
-            return QuoteTableName(tablename);
+            return QuoteIdentifier(tablename);
         }
 
-        private static object QuoteIdentifier(string identifier)
+        private static string QuoteIdentifier(string identifier)
         {
             return $"[{identifier.Replace("]", "]]")}]";
         }
@@ -120,14 +120,19 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
             {
                 "string" => typeof(string),
                 "int" => typeof(int),
+                "int16" => typeof(short),
+                "int32" => typeof(int),
+                "int64" => typeof(long),
                 "long" => typeof(long),
                 "double" => typeof(double),
                 "float" => typeof(float),
                 "decimal" => typeof(decimal),
                 "bool" => typeof(bool),
+                "boolean" => typeof(bool),
                 "datetime" => typeof(DateTime),
                 "datetimeoffset" => typeof(DateTimeOffset),
-                "Guid" => typeof(Guid),
+                "guid" => typeof(Guid),
+                "readonlymemory`1" => typeof(string),
 
                 _ => throw new NotSupportedException($"Unsupported CLR type: {column.ClrType}"),
             };

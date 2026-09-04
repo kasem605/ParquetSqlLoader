@@ -1,9 +1,12 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using Parquet;
+using Parquet.Schema;
 using ParquetSQLLoader.Core.Interfaces;
 using ParquetSQLLoader.Core.Models;
-using Parquet;
-using Parquet.Schema;
+using System.Data.SqlTypes;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ParquetSQLLoader.Infrastructure.Parquet
 {
@@ -33,16 +36,33 @@ namespace ParquetSQLLoader.Infrastructure.Parquet
 
             List<ParquetColumnDefinition> columns = fields.Select(field => new ParquetColumnDefinition
             {
+
                 Name = field.Name,
-                ClrType = field.ClrType?.Name ?? "Unknown",
+                ClrType = GetApplicationClrType(field),
                 IsNullable = field.IsNullable,
+
             }).ToList();
+
+            foreach (ParquetColumnDefinition c in columns)
+            {
+                Debug.WriteLine(c.Name + ", " + c.ClrType + ", " + c.IsNullable);
+            }
 
             return new ParquetTableDefinition
             {
                 TableName = Path.GetFileNameWithoutExtension(filePath),
                 Columns = columns
             };
+        }
+
+        private string GetApplicationClrType(DataField field)
+        {
+            if (field.ClrType == typeof(ReadOnlyMemory<char>))
+            {
+                return "String";
+            }
+
+            return field.ClrType.Name;
         }
     }
 }
