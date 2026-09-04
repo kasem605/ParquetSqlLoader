@@ -65,7 +65,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
             await bulkCopy.WriteToServerAsync(dataTable, cancellationToken);
         }
 
-        private string QuoteTableName(string tablename)
+        private static string QuoteTableName(string tablename)
         {
             if(tablename.Contains('.'))
             {
@@ -82,7 +82,7 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
             return QuoteTableName(tablename);
         }
 
-        private object QuoteIdentifier(string identifier)
+        private static object QuoteIdentifier(string identifier)
         {
             return $"[{identifier.Replace("]", "]]")}]";
         }
