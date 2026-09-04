@@ -11,9 +11,9 @@ namespace ParquetSQLLoader.Infrastructure.Parquet.SqlServer
 {
     public class SQLBulkWriter : ISqlBulkWriter
     {
-        private readonly SqlConnection _connectionString;
+        private readonly string _connectionString;
 
-        public SQLBulkWriter(SqlConnection connectionString)
+        public SQLBulkWriter(string connectionString)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException("SQL Server connection string is required", nameof(connectionString));
         }

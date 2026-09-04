@@ -3,8 +3,6 @@
     <Project Path="ParquetSQLLoader.Con/ParquetSQLLoader.Con.csproj" />
     <Project Path="ParquetSQLLoader.Core/ParquetSQLLoader.Core.csproj" />
     <Project Path="ParquetSQLLoader.Infrastructure/ParquetSQLLoader.Infrastructure.csproj" />
-    <Project Path="ParquetSQLLoader.Parquet/ParquetSQLLoader.Parquet.csproj" />
-    <Project Path="ParquetSQLLoader.SqlServer/ParquetSQLLoader.SqlServer.csproj" />
   </Folder>
   <Folder Name="/tests/" />
 </Solution>
