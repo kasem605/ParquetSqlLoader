@@ -49,7 +49,11 @@ namespace ParquetSQLLoader.Infrastructure.SqlServer
 
             string tableName = QuoteIdentifier(tableDefinition.TableName);
 
-            sql.Append($"CREATE TABLE {tableName}");
+            sql.Append("IF OBJECT_ID(N'").Append(tableName).Append("', N'U') IS NOT NULL DROP TABLE ").Append(tableName).AppendLine(";");
+
+            sql.Append("\n");
+
+            sql.Append($"CREATE TABLE {tableName}\n");
 
             sql.Append("(");
 

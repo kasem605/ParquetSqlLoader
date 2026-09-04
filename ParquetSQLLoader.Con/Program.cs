@@ -37,7 +37,7 @@ try
     services.AddSingleton<ISqlBulkWriter>(_ => new SQLBulkWriter(connectionString));
 
     // Loader
-    services.AddSingleton<IParquetLoader, ParquetLoader>();
+    services.AddSingleton<ParquetSqlImportService>();
 
     using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
